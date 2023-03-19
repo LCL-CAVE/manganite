@@ -1,0 +1,22 @@
+[build-system]
+requires = ["setuptools>=61.0.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "manganite"
+dynamic = ["version"]
+dependencies = [
+  "nbconvert",
+  "panel>=0.14"
+]
+
+[project.scripts]
+mnn = "manganite.command:main"
+
+[tool.setuptools.dynamic]
+version = {attr = "manganite.__version__"}
+
+[tool.setuptools.data-files]
+"etc/jupyter/jupyter_server_config.d" = [
+  "jupyter-config/jupyter_server_config.d/manganite.json"
+]
