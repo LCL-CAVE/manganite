@@ -23,8 +23,7 @@ def init(*args, **kwargs):
 
     pn.extension(
         'gridstack', 'tabulator', 'plotly', *args,
-        template='material', theme='dark',
-        raw_css=[CSS_FIX], **kwargs)
+        template='material', raw_css=[CSS_FIX], **kwargs)
 
     _optimizer_terminal = pn.widgets.Terminal(sizing_mode='stretch_both', write_to_console=True)
     _optimizer_button = pn.widgets.Button(name='Start optimization')
