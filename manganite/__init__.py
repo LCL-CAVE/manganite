@@ -5,49 +5,97 @@ import panel as pn
 import pandas as pd
 
 
-__version__ = '0.0.1'
+__version__ = '0.0.2'
 
 CSS_FIX = """
+#sidebar { background-color: #eee; }
 .grid-stack-item-content > * { margin: 0 !important; }
+.xterm .xterm-viewport { width: auto !important; }
 """
 
-_layout = {}
-_optimizer_button = None
-_optimizer_terminal = None
-_optimizer_result = None
-optimizer_done = None
+
+class Manganite:
+    _nb_instance = None
+    _server_instances = {}
+
+
+    def __init__(self, *args, **kwargs):
+        title = kwargs.pop('title', 'Manganite App')
+        description = kwargs.pop('description', None)
+
+        pn.extension(
+            'terminal', 'gridstack', 'tabulator', 'plotly', 'mathjax', *args,
+            raw_css=[CSS_FIX], sizing_mode='stretch_width', **kwargs)
+
+        if pn.state.curdoc: # shared environment
+            Manganite._server_instances[pn.state.curdoc] = self
+        else: # running in JupyterLab
+            Manganite._nb_instance = self
+
+        self._init_terminal()
+        self._optimizer_button = pn.widgets.Button(name='▶ Run', width=80)
+        self._optimizer_result = None
+        self.optimizer_done = pn.widgets.BooleanStatus(value=False)
+
+        self._layout = {
+            'description': pn.Column(),
+            'inputs': pn.layout.gridstack.GridStack(
+                sizing_mode='stretch_both', allow_drag=False, ncols=6, mode='override'),
+            'results':pn.layout.gridstack.GridStack(
+                sizing_mode='stretch_both', allow_drag=False, ncols=6, mode='override')
+        }
+
+        if description is not None:
+            self._layout['description'].append(pn.pane.Markdown(description))
+
+        self._template = pn.template.MaterialTemplate(
+            header=[pn.FlexBox(self._optimizer_button, justify_content='end')],
+            header_background='#000228',
+            sidebar=['## Log', self._optimizer_terminal],
+            main=[pn.Tabs(
+                ('Description', self._layout['description']),
+                ('Inputs', self._layout['inputs']),
+                ('Results', self._layout['results'])
+            )],
+            sidebar_width=400,
+            site='CAVE Lab&nbsp;',
+            title=title
+        ).servable()
+
+
+    def _init_terminal(self):
+        terminal_options = {}
+        theme = pn.state.session_args.get('theme')
+        if theme is None or theme[0] != 'dark':
+            terminal_options['theme'] = {
+                'background': '#fff',
+                'foreground': '#000'
+            }
+
+        self._optimizer_terminal = pn.widgets.Terminal(
+            sizing_mode='stretch_both',
+            write_to_console=True,
+            options=terminal_options)
+
+
+    @classmethod
+    def get_instance(cls):
+        if pn.state.curdoc:
+            return cls._server_instances[pn.state.curdoc]
+        return cls._nb_instance
 
 
 def init(*args, **kwargs):
-    global _layout, _optimizer_button, _optimizer_terminal, optimizer_done
+    mnn = Manganite(*args, **kwargs)
+    return mnn._layout['inputs'], mnn._layout['results'], mnn.optimizer_done
 
-    pn.extension(
-        'gridstack', 'tabulator', 'plotly', *args,
-        template='material', raw_css=[CSS_FIX], **kwargs)
 
-    _optimizer_terminal = pn.widgets.Terminal(sizing_mode='stretch_both', write_to_console=True)
-    _optimizer_button = pn.widgets.Button(name='Start optimization')
-    optimizer_done = pn.widgets.BooleanStatus(value=False)
-
-    _layout['inputs'] = tab_inputs = pn.layout.gridstack.GridStack(
-        sizing_mode='stretch_both', ncols=6, mode='override')
-    _layout['optimize'] = tab_optimize = pn.layout.gridstack.GridStack(sizing_mode='stretch_width',
-        ncols=2)
-    tab_optimize[0, 0] = pn.Column('## Parameters', _optimizer_button)
-    tab_optimize[0, 1] = pn.Column('## Log', _optimizer_terminal)
-    _layout['results'] = tab_results = pn.layout.gridstack.GridStack(
-        sizing_mode='stretch_width', ncols=6, mode='override')
-
-    main_layout = pn.Tabs(
-        ('Inputs', tab_inputs),
-        ('Optimizer', tab_optimize),
-        ('Results', tab_results)
-    ).servable()
-    return tab_inputs, tab_optimize, tab_results, optimizer_done
+def get_template():
+    return Manganite.get_instance()._template
 
 
 def get_layout():
-    return _layout
+    return Manganite.get_instance()._layout
 
 
 def create_upload_handler(transform=None):
@@ -60,30 +108,36 @@ def create_upload_handler(transform=None):
     return callback
 
 
-def on_optimize(cb):
-    def wrapped_cb(*events):
-        global _optimizer_result
-        sys.stdout = _optimizer_terminal
-        sys.stderr = _optimizer_terminal
-        _optimizer_terminal.clear()
-        optimizer_done.value = False
+def on_optimize(handler, cb=None):
+    mnn = Manganite.get_instance()
+    def wrapped_handler(*events):
+        sys.stdout = mnn._optimizer_terminal
+        sys.stderr = mnn._optimizer_terminal
+        mnn._optimizer_terminal.clear()
+        mnn.optimizer_done.value = False
         try:
-            _optimizer_result = cb()
-            optimizer_done.value = True
+            mnn._optimizer_result = handler()
+            mnn.optimizer_done.value = True
         finally:
             sys.stdout.flush()
             sys.stderr.flush()
             sys.stdout = sys.__stdout__
             sys.stderr = sys.__stderr__
-    _optimizer_button.on_click(wrapped_cb)
+
+        if cb is not None:
+            cb()
+
+    mnn._optimizer_button.on_click(wrapped_handler)
 
 
 def get_result():
-    return _optimizer_result
+    mnn = Manganite.get_instance()
+    return mnn._optimizer_result
 
 
 def load_ipython_extension(ipython):
     from .magics import ManganiteMagics
+    init()
     ipython.register_magics(ManganiteMagics)
 
 
