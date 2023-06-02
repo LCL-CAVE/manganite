@@ -7,8 +7,13 @@ import nbconvert.preprocessors
 
 
 class TransformManganiteMagicsPreprocessor(nbconvert.preprocessors.Preprocessor):
+    _import_pattern = re.compile(r'import\s+manganite')
     _magic_pattern = re.compile(r'^\s*%%(mnn_(input|model|result))(\s+(.*))?')
     _title_pattern = re.compile(r'^#\s*(.+)')
+
+
+    def has_import(self, cell):
+        return cell['cell_type'] == 'code' and self._import_pattern.match(cell['source'])
 
 
     def is_description_cell(self, cell):
@@ -23,6 +28,10 @@ class TransformManganiteMagicsPreprocessor(nbconvert.preprocessors.Preprocessor)
 
 
     def preprocess(self, nb, resources):
+        nb_imports_mnn = next((True for cell in nb.cells if self.has_import(cell)), False)
+        if not nb_imports_mnn:
+            return nb, resources
+
         description = '\n\n'.join([cell['source'] for cell in nb.cells if self.is_description_cell(cell)])
         title = self._title_pattern.match(description)
 
