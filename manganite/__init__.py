@@ -81,6 +81,9 @@ class Manganite:
     @classmethod
     def get_instance(cls):
         if pn.state.curdoc:
+            if pn.state.curdoc not in cls._server_instances:
+                if cls._nb_instance and pn.state.curdoc is cls._nb_instance._template.server_doc():
+                    cls._server_instances[pn.state.curdoc] = cls._nb_instance
             return cls._server_instances[pn.state.curdoc]
         return cls._nb_instance
 
