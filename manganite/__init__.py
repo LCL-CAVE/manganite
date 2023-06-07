@@ -39,10 +39,10 @@ class Manganite:
 
         self._layout = {
             'description': pn.Column(),
-            'inputs': pn.layout.gridstack.GridStack(
-                sizing_mode='stretch_both', allow_drag=False, ncols=6, mode='override'),
-            'results':pn.layout.gridstack.GridStack(
-                sizing_mode='stretch_both', allow_drag=False, ncols=6, mode='override')
+            'inputs': pn.layout.gridstack.GridStack(ncols=6, mode='override', allow_drag=False,
+                sizing_mode='stretch_width', height_policy='max', min_height=900),
+            'results':pn.layout.gridstack.GridStack(ncols=6, mode='override', allow_drag=False,
+                sizing_mode='stretch_width', height_policy='max', min_height=900)
         }
 
         if description is not None:
@@ -55,7 +55,8 @@ class Manganite:
             main=[pn.Tabs(
                 ('Description', self._layout['description']),
                 ('Inputs', self._layout['inputs']),
-                ('Results', self._layout['results'])
+                ('Results', self._layout['results']),
+                dynamic=True
             )],
             sidebar_width=400,
             site='CAVE Lab&nbsp;',

@@ -1,3 +1,4 @@
+import datetime
 from dataclasses import dataclass, field
 from shlex import split
 from typing import Callable
@@ -21,46 +22,69 @@ class RerunnableCell():
 
         if widget_name.isidentifier() and widget_name in local_ns and len(coords):
             widget = local_ns[widget_name]
-            if isinstance(widget, DataFrame):
-                widget = pn.widgets.Tabulator(widget)
+            if isinstance(widget, int):
+                widget = pn.widgets.IntInput(value=widget)
+                local_ns[widget_name] = widget
+            elif isinstance(widget, float):
+                widget = pn.widgets.FloatInput(value=widget)
+                local_ns[widget_name] = widget
+            elif isinstance(widget, DataFrame):
+                widget = pn.widgets.Tabulator(value=widget)
+                local_ns[widget_name] = widget
+            elif isinstance(widget, datetime.datetime):
+                widget = pn.widgets.DatetimePicker(value=widget)
+                local_ns[widget_name] = widget
+            elif isinstance(widget, tuple) and len(widget) == 2 and all(isinstance(el, datetime.datetime) for el in widget):
+                widget = pn.widgets.DatetimeRangePicker(value=widget)
                 local_ns[widget_name] = widget
 
             if self.pane is None:
                 y, x, w = coords
                 self.pane = pn.panel(widget)
-                get_layout()[stage][y, x:x+w] = pn.Column(
-                    pn.pane.Markdown('### {}'.format(widget_title or widget_name)), self.pane)
+
+                grid = get_layout()[stage]
+                grid[y, x:x+w] = pn.Column(
+                    pn.pane.Markdown('### {}'.format(widget_title or widget_name)), self.pane, height=300)
+                grid.height = grid.nrows * 350
             else:
                 self.pane.object = widget
 
 
 @magics_class
 class ManganiteMagics(Magics):
+    _unwrappable_types = (
+        pn.widgets.IntInput,
+        pn.widgets.FloatInput,
+        pn.widgets.Tabulator,
+        pn.widgets.DatetimePicker,
+        pn.widgets.DatetimeRangePicker)
+
+
     def __init__(self, *args, **kwargs):
         super(ManganiteMagics, self).__init__(*args, **kwargs)
         self._cells = {}
         self._result_cells = {}
 
 
-    def unwrap_dataframes(self, local_ns):
-        df_mapping = {}
+    def unwrap_widgets(self, local_ns):
+        wrapper_mapping = {}
         for variable in self._cells.keys():
-            if not isinstance(local_ns.get(variable, None), pn.widgets.Tabulator):
+            if not isinstance(local_ns.get(variable, None), self._unwrappable_types):
                 continue
-            df_mapping[variable] = local_ns[variable]
-            local_ns[variable] = df_mapping[variable].value
+            wrapper_mapping[variable] = local_ns[variable]
+            local_ns[variable] = wrapper_mapping[variable].value
 
-        return df_mapping
+        return wrapper_mapping
 
 
-    def rewrap_dataframes(self, local_ns, df_mapping):
-        for variable in df_mapping.keys():
+    def rewrap_widgets(self, local_ns, wrapper_mapping):
+        for variable in wrapper_mapping.keys():
             # reassigned to some other value?
-            if not isinstance(local_ns.get(variable, None), DataFrame):
+            if not isinstance(local_ns.get(variable, None), type(wrapper_mapping[variable].value)):
                 continue
-            if df_mapping[variable].value is not local_ns[variable]:
-                df_mapping[variable].value = local_ns[variable]
-            local_ns[variable] = df_mapping[variable]
+            if wrapper_mapping[variable].value is not local_ns[variable]:
+                wrapper_mapping[variable].value = local_ns[variable]
+            local_ns[variable] = wrapper_mapping[variable]
 
 
     def make_rerunnable(self, stage, args, cell_source, local_ns):
@@ -78,9 +102,9 @@ class ManganiteMagics(Magics):
         cell = self._cells.setdefault(args.name, RerunnableCell(deps=args.deps if hasattr(args, 'deps') and args.deps else []))
 
         def rerun(*events):
-            df_mapping = self.unwrap_dataframes(local_ns)
+            wrapper_mapping = self.unwrap_widgets(local_ns)
             exec(cell_source, local_ns, local_ns)
-            self.rewrap_dataframes(local_ns, df_mapping)
+            self.rewrap_widgets(local_ns, wrapper_mapping)
 
             cell.display_if_defined(local_ns, args.name, args.header, stage, args.display)
 
