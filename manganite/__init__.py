@@ -5,7 +5,7 @@ import panel as pn
 import pandas as pd
 
 
-__version__ = '0.0.2'
+__version__ = '0.0.3'
 
 CSS_FIX = """
 #sidebar { background-color: #eee; }
@@ -141,8 +141,16 @@ def get_result():
 
 def load_ipython_extension(ipython):
     from .magics import ManganiteMagics
+    from .magics2 import ManganiteMagics2
+    
     init()
     ipython.register_magics(ManganiteMagics)
+
+    new_magics = ManganiteMagics2(ipython)
+    ipython.register_magics(new_magics)
+    ipython.events.register('pre_run_cell', new_magics.pre_run)
+    ipython.events.register('post_run_cell', new_magics.post_run)
+    ipython.input_transformers_post.append(new_magics.transform_input)
 
 
 def _jupyter_server_extension_points():
