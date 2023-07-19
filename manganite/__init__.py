@@ -5,7 +5,7 @@ import panel as pn
 import pandas as pd
 
 
-__version__ = '0.0.2'
+__version__ = '0.0.3'
 
 CSS_FIX = """
 #sidebar { background-color: #eee; }
@@ -20,7 +20,7 @@ class Manganite:
 
 
     def __init__(self, *args, **kwargs):
-        title = kwargs.pop('title', 'Manganite App')
+        title = kwargs.pop('title', None) or 'Manganite App'
         description = kwargs.pop('description', None)
 
         pn.extension(
@@ -37,27 +37,22 @@ class Manganite:
         self._optimizer_result = None
         self.optimizer_done = pn.widgets.BooleanStatus(value=False)
 
-        self._layout = {
-            'description': pn.Column(),
-            'inputs': pn.layout.gridstack.GridStack(ncols=6, mode='override', allow_drag=False,
-                sizing_mode='stretch_width', height_policy='max', min_height=900),
-            'results':pn.layout.gridstack.GridStack(ncols=6, mode='override', allow_drag=False,
-                sizing_mode='stretch_width', height_policy='max', min_height=900)
-        }
+        self._layout = {'Description': pn.Column()}
 
         if description is not None:
-            self._layout['description'].append(pn.pane.Markdown(description))
+            self._layout['Description'].append(pn.pane.Markdown(description))
+
+        self._tabs = pn.Tabs(
+            ('Description', self._layout['Description']),
+            dynamic=True)
+        
+        self._header = pn.FlexBox(justify_content='end')
 
         self._template = pn.template.MaterialTemplate(
-            header=[pn.FlexBox(self._optimizer_button, justify_content='end')],
+            header=[self._header],
             header_background='#000228',
             sidebar=['## Log', self._optimizer_terminal],
-            main=[pn.Tabs(
-                ('Description', self._layout['description']),
-                ('Inputs', self._layout['inputs']),
-                ('Results', self._layout['results']),
-                dynamic=True
-            )],
+            main=[self._tabs],
             sidebar_width=400,
             site='CAVE Lab&nbsp;',
             title=title
@@ -77,6 +72,18 @@ class Manganite:
             sizing_mode='stretch_both',
             write_to_console=True,
             options=terminal_options)
+        
+    
+    def get_tab(self, name):
+        if name not in self._layout:
+            self._layout[name] = pn.GridBox(ncols=2)
+            self._tabs.append((name, self._layout[name]))
+        
+        return self._layout[name]
+    
+
+    def get_header(self):
+        return self._header
 
 
     @classmethod
@@ -91,7 +98,7 @@ class Manganite:
 
 def init(*args, **kwargs):
     mnn = Manganite(*args, **kwargs)
-    return mnn._layout['inputs'], mnn._layout['results'], mnn.optimizer_done
+    return mnn
 
 
 def get_template():

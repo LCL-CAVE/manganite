@@ -174,3 +174,10 @@ class ManganiteMagics(Magics):
             exec(cell_source, local_ns, local_ns)
 
         on_optimize(run_model, run_results)
+
+
+    # dummy magic for running cells unmodified in Jupyter
+    @needs_local_scope
+    @cell_magic
+    def mnn(self, arg_line, cell_source, local_ns):
+        exec(cell_source, local_ns, local_ns)

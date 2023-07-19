@@ -1,19 +1,62 @@
 import logging
 import re
 from textwrap import dedent
+from uuid import uuid4
 
 import nbconvert.exporters
 import nbconvert.preprocessors
 
 
 class TransformManganiteMagicsPreprocessor(nbconvert.preprocessors.Preprocessor):
-    _import_pattern = re.compile(r'import\s+manganite')
-    _magic_pattern = re.compile(r'^\s*%%(mnn_(input|model|result))(\s+(.*))?')
+    _magic_pattern = re.compile(r'^\s*%%mnn\s+(.*)')
     _title_pattern = re.compile(r'^#\s*(.+)')
 
 
-    def has_import(self, cell):
-        return cell['cell_type'] == 'code' and self._import_pattern.match(cell['source'])
+    def __call__(self, nb, resources):
+        return self.preprocess(nb, resources)
+
+
+    def preprocess(self, nb, resources):
+        if not self.has_import(nb):
+            return nb, resources
+
+        description = '\n\n'.join([cell['source'] for cell in nb.cells if self.is_description_cell(cell)])
+        title = self._title_pattern.match(description)
+
+        nb.cells.insert(0, {
+            'id': str(uuid4()),
+            'cell_type': 'code',
+            'outputs': [],
+            'execution_count': 1,
+            'metadata': {'tags': ['mnn-ignore']},
+            'source': dedent("""\
+                import manganite as _mnn_import
+                from manganite.cell_manager import CellManager
+                _mnn_import.init(title={0!r}, description={1!r})
+                _mnn_cell_mgr = CellManager(globals())""".format(title.group(1) if title else None, description))
+        })
+
+        return super().preprocess(nb, resources)
+
+
+    def preprocess_cell(self, cell, resources, index):
+        if '%load_ext manganite' in cell['source']:
+            cell['source'] = cell['source'].replace('%load_ext manganite', '')
+
+        if 'mnn-ignore' in cell['metadata'].get('tags', []):
+            return cell, resources
+
+        if cell['cell_type'] == 'code':
+            cell['source'] = self.transform_cell(cell['source'].lstrip())
+
+        return cell, resources
+
+
+    def has_import(self, nb):
+        import_pattern = re.compile(r'import\s+manganite')
+        cell_has_import = lambda cell: cell['cell_type'] == 'code' and import_pattern.match(cell['source'])
+
+        return next((True for cell in nb.cells if cell_has_import(cell)), False)
 
 
     def is_description_cell(self, cell):
@@ -21,51 +64,18 @@ class TransformManganiteMagicsPreprocessor(nbconvert.preprocessors.Preprocessor)
             return False
 
         return cell['cell_type'] == 'markdown'
+    
 
+    def transform_cell(self, cell):
+        lines = cell.splitlines()
+        if len(lines):
+            match = self._magic_pattern.match(lines[0])
+            if match is None:
+                return '_mnn_cell_mgr.add_cell({0!r})'.format(cell)
+            else:
+                return '_mnn_cell_mgr.add_magic_cell({0!r}, {1!r})'.format(match.group(1), '\n'.join(lines[1:]))
 
-    def transform_magics(self, magic, line, cell):
-        return '_mnn_magics.{0}({1!r}, {2!r}, globals())'.format(magic, line, cell)
-
-
-    def preprocess(self, nb, resources):
-        nb_imports_mnn = next((True for cell in nb.cells if self.has_import(cell)), False)
-        if not nb_imports_mnn:
-            return nb, resources
-
-        description = '\n\n'.join([cell['source'] for cell in nb.cells if self.is_description_cell(cell)])
-        title = self._title_pattern.match(description)
-
-        nb.cells.insert(0, {
-            'cell_type': 'code',
-            'outputs': [],
-            'execution_count': 1,
-            'metadata': {},
-            'source': dedent("""\
-                import manganite as _mnn_import
-                from manganite.magics import ManganiteMagics
-                _mnn_import.init(title={0!r}, description={1!r})
-                _mnn_magics = ManganiteMagics()""".format(title.group(1) if title else None, description))
-        })
-
-        return super().preprocess(nb, resources)
-
-
-    def preprocess_cell(self, cell, resources, index):
-        if 'mnn-ignore' in cell['metadata'].get('tags', []):
-            return cell, resources
-
-        if cell['cell_type'] == 'code':
-            lines = cell['source'].lstrip().splitlines()
-            if len(lines):
-                match = self._magic_pattern.match(lines[0])
-                if match is not None:
-                    cell['source'] = self.transform_magics(match.group(1), match.group(4), '\n'.join(lines[1:]))
-
-        return cell, resources
-
-
-    def __call__(self, nb, resources):
-        return self.preprocess(nb, resources)
+        return cell
 
 
 def _patch_python_exporter():
