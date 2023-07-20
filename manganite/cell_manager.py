@@ -87,9 +87,6 @@ CellTransformInfo = namedtuple('CellTransformInfo', ['source', 'stores', 'loads'
 class CellManager():
     def __init__(self, ns):
         self.ns = ns
-        self.tracked_names = set()
-        self.vars = {}
-        self.cells = {}
         self.deferred = {}
         self.panels = {}
         self.process_callbacks = {}
@@ -226,7 +223,7 @@ class CellManager():
     
 
     def add_process_cell(self, args, raw_source):
-        run_cell = self.add_cell(raw_source, process_var=args.var)
+        run_cell = self.add_cell(raw_source, process_var=args.returns)
 
         mnn = Manganite.get_instance()
         def run_process(*events):
@@ -235,7 +232,7 @@ class CellManager():
             mnn._optimizer_terminal.clear()
             try:
                 run_cell()
-                for cb in self.process_callbacks[args.var]:
+                for cb in self.process_callbacks[args.returns]:
                     cb()
             finally:
                 sys.stdout.flush()
@@ -244,8 +241,7 @@ class CellManager():
                 sys.stderr = sys.__stderr__
         
         button = pn.widgets.Button(
-            name=args.trigger[1],
-            icon='player-play',
+            name=args.on[1],
             stylesheets=[':host { width: fit-content; }'])
         button.on_click(run_process)
         Manganite.get_instance().get_header().append(button)
@@ -273,18 +269,18 @@ class CellManager():
         parser = MagicArgumentParser()
         subparsers = parser.add_subparsers(dest='magic_type')
 
-        process_parser = subparsers.add_parser('process')
-        process_parser.add_argument('var', type=str)
-        process_parser.add_argument('--trigger', '-t', type=str, nargs=2)
+        process_parser = subparsers.add_parser('execute')
+        process_parser.add_argument('--returns', type=str)
+        process_parser.add_argument('--on', type=str, nargs=2)
 
         widget_parser = subparsers.add_parser('widget')
-        widget_parser.add_argument('var', type=str)
-        widget_parser.add_argument('--in', type=str, dest='tab')
+        widget_parser.add_argument('--var', type=str)
+        widget_parser.add_argument('--tab', type=str)
         widget_parser.add_argument('--type', type=str, nargs='+')
         widget_parser.add_argument('--header', type=str)
 
         args = parser.parse_args(split(arg_line))
-        if args.magic_type == 'process':
+        if args.magic_type == 'execute':
             self.add_process_cell(args, raw_source)
         elif args.magic_type == 'widget':
             self.add_widget_cell(args, raw_source)
