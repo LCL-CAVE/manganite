@@ -8,7 +8,7 @@ Currently Manganite can be built from source and installed using `pip`:
 
 ```bash
 pip install build
-python -m build && pip install dist/manganite-0.0.2-py3-none-any.whl
+python -m build && pip install dist/manganite-0.0.3-py3-none-any.whl
 ```
 
 The above command should also take care of installing and enabling the necessary Jupyter Server extensions: one for Panel, to enable the preview pane, and one for Manganite, to preprocess the magic commands before passing the notebook to Panel preview. To ensure proper functioning, remember to **restart your Jupyter Server** after installing the package.

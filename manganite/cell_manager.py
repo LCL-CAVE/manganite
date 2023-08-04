@@ -1,7 +1,7 @@
 import ast
 import sys
 from collections import namedtuple
-from datetime import datetime
+from datetime import date, datetime
 from shlex import split
 
 import ast_scope
@@ -13,6 +13,10 @@ from IPython.core.magic_arguments import MagicArgumentParser
 from manganite import Manganite
 
 
+class BoolWrapper(param.Parameterized):
+    value = param.Boolean()
+
+
 class NumberWrapper(param.Parameterized):
     value = param.Number()
 
@@ -21,14 +25,21 @@ class StringWrapper(param.Parameterized):
     value = param.String()
 
 
+class DatetimeWrapper(param.Parameterized):
+    value = param.Date()
+
+
 class DataFrameWrapper(param.Parameterized):
     value = param.DataFrame()
 
 
 WrappableTypes = {
+    bool: BoolWrapper,
     int: NumberWrapper,
     float: NumberWrapper,
     str: StringWrapper,
+    date: DatetimeWrapper,
+    datetime: DatetimeWrapper,
     DataFrame: DataFrameWrapper}
 
 
@@ -156,8 +167,18 @@ class CellManager():
                         options = list(self.ns[params])
                         value = self.ns[name] if self.ns[name] in options else options[0]
                         self.ns[name] = pn.widgets.RadioBoxGroup(name=name, options=options, value=value)
-            elif var_type == datetime:
+            elif var_type == bool:
+                label = params if type(params) == str else name
+                if widget_type == 'switch':
+                    self.ns[name] = pn.widgets.Switch(
+                        name=label, value=self.ns[name],
+                        stylesheets=[':host { width: 40px; }'])
+                else:
+                    self.ns[name] = pn.widgets.Checkbox(name=label, value=self.ns[name])
+            elif var_type == date:
                 self.ns[name] = pn.widgets.DatePicker(name=name, value=self.ns[name])
+            elif var_type == datetime:
+                self.ns[name] = pn.widgets.DatetimePicker(name=name, value=self.ns[name])
             elif var_type == DataFrame:
                 self.ns[name] = pn.widgets.Tabulator(self.ns[name])
 
@@ -224,12 +245,15 @@ class CellManager():
 
     def add_process_cell(self, args, raw_source):
         run_cell = self.add_cell(raw_source, process_var=args.returns)
+        label = args.on[1]
 
         mnn = Manganite.get_instance()
         def run_process(*events):
             sys.stdout = mnn._optimizer_terminal
             sys.stderr = mnn._optimizer_terminal
-            mnn._optimizer_terminal.clear()
+            # mnn._optimizer_terminal.clear()
+            mnn._optimizer_terminal.write(
+                '\033[32;1m[{}]\nExecuting "{}"...\033[0m\n\n\n'.format(datetime.now().isoformat(sep=' ', timespec='seconds'), label))
             try:
                 run_cell()
                 for cb in self.process_callbacks[args.returns]:
@@ -237,11 +261,12 @@ class CellManager():
             finally:
                 sys.stdout.flush()
                 sys.stderr.flush()
+                mnn._optimizer_terminal.write('\n\n')
                 sys.stdout = sys.__stdout__
                 sys.stderr = sys.__stderr__
         
         button = pn.widgets.Button(
-            name=args.on[1],
+            name=label,
             stylesheets=[':host { width: fit-content; }'])
         button.on_click(run_process)
         Manganite.get_instance().get_header().append(button)
@@ -253,7 +278,8 @@ class CellManager():
                 self.panels[args.var].object = widget
             else:
                 self.panels[args.var] = pn.panel(widget)
-                Manganite.get_instance().get_tab(args.tab).append(pn.Column(
+                tab = Manganite.get_instance().get_tab(args.tab)
+                tab.append(pn.Column(
                     pn.pane.Markdown('### {}'.format(args.header or args.var)),
                     self.panels[args.var]))
 
@@ -278,8 +304,11 @@ class CellManager():
         widget_parser.add_argument('--tab', type=str)
         widget_parser.add_argument('--type', type=str, nargs='+')
         widget_parser.add_argument('--header', type=str)
+        widget_parser.add_argument('--position', type=int, nargs=3,
+            required=False, default=(-1, 0, 3))
 
-        args = parser.parse_args(split(arg_line))
+        argv = split(arg_line)
+        args = parser.parse_args(argv)
         if args.magic_type == 'execute':
             self.add_process_cell(args, raw_source)
         elif args.magic_type == 'widget':

@@ -8,9 +8,9 @@ import pandas as pd
 __version__ = '0.0.3'
 
 CSS_FIX = """
-#sidebar { background-color: #eee; }
+#sidebar { background-color: #fafafa; }
+#sidebar > .mdc-drawer__content > .mdc-list { box-sizing: border-box; height: 100%; }
 .grid-stack-item-content > * { margin: 0 !important; }
-.xterm .xterm-viewport { width: auto !important; }
 """
 
 
@@ -47,11 +47,15 @@ class Manganite:
             dynamic=True)
         
         self._header = pn.FlexBox(justify_content='end')
+        self._sidebar = pn.FlexBox(flex_direction='column', flex_wrap='nowrap', sizing_mode='stretch_both')
+        self._sidebar.append('## Log')
+        self._sidebar.append(self._optimizer_terminal)
 
         self._template = pn.template.MaterialTemplate(
+            # collapsed_sidebar=True,
             header=[self._header],
             header_background='#000228',
-            sidebar=['## Log', self._optimizer_terminal],
+            sidebar=[self._sidebar],
             main=[self._tabs],
             sidebar_width=400,
             site='CAVE Lab&nbsp;',
@@ -60,22 +64,24 @@ class Manganite:
 
 
     def _init_terminal(self):
-        terminal_options = {}
+        terminal_options = {'fontSize': 14}
         theme = pn.state.session_args.get('theme')
         if theme is None or theme[0] != 'dark':
             terminal_options['theme'] = {
-                'background': '#fff',
+                'background': '#fafafa',
                 'foreground': '#000'
             }
 
         self._optimizer_terminal = pn.widgets.Terminal(
             sizing_mode='stretch_both',
             write_to_console=True,
-            options=terminal_options)
+            options=terminal_options,
+            stylesheets=['.terminal-container { width: 100% !important; } .xterm .xterm-viewport { width: auto !important; }'])
         
     
     def get_tab(self, name):
         if name not in self._layout:
+            # self._layout[name] = pn.GridStack(ncols=6)
             self._layout[name] = pn.GridBox(ncols=2)
             self._tabs.append((name, self._layout[name]))
         
