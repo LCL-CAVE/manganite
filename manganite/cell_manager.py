@@ -1,4 +1,5 @@
 import ast
+import re
 import sys
 from collections import namedtuple
 from datetime import date, datetime
@@ -251,9 +252,10 @@ class CellManager():
         def run_process(*events):
             sys.stdout = mnn._optimizer_terminal
             sys.stderr = mnn._optimizer_terminal
-            # mnn._optimizer_terminal.clear()
             mnn._optimizer_terminal.write(
-                '\033[32;1m[{}]\nExecuting "{}"...\033[0m\n\n\n'.format(datetime.now().isoformat(sep=' ', timespec='seconds'), label))
+                '\033[32;1m[{}]\nExecuting "{}"...\033[0m\n\n\n'.format(
+                    datetime.now().isoformat(sep=' ', timespec='seconds'),
+                    label))
             try:
                 run_cell()
                 for cb in self.process_callbacks[args.returns]:
@@ -269,7 +271,10 @@ class CellManager():
             name=label,
             stylesheets=[':host { width: fit-content; }'])
         button.on_click(run_process)
-        Manganite.get_instance().get_header().append(button)
+        if args.tab is not None:
+            Manganite.get_instance().get_tab(args.tab).append(button)
+        else:
+            Manganite.get_instance().get_header().append(button)
 
 
     def add_widget_cell(self, args, raw_source):
@@ -296,8 +301,9 @@ class CellManager():
         subparsers = parser.add_subparsers(dest='magic_type')
 
         process_parser = subparsers.add_parser('execute')
-        process_parser.add_argument('--returns', type=str)
         process_parser.add_argument('--on', type=str, nargs=2)
+        process_parser.add_argument('--tab', type=str, required=False)
+        process_parser.add_argument('--returns', type=str)
 
         widget_parser = subparsers.add_parser('widget')
         widget_parser.add_argument('--var', type=str)
@@ -308,6 +314,12 @@ class CellManager():
             required=False, default=(-1, 0, 3))
 
         argv = split(arg_line)
+
+        # check for slider range arguments, like `-50:50:5` or `0.0:1.0:0.01`
+        # and prepend a space so that negative values are not parsed as --args
+        range_spec = re.compile(':'.join(3 * [r'[+-]?(\d*\.)?\d+']))
+        argv = [' ' + arg if range_spec.match(arg) else arg for arg in argv]
+
         args = parser.parse_args(argv)
         if args.magic_type == 'execute':
             self.add_process_cell(args, raw_source)
