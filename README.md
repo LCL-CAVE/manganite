@@ -13,30 +13,48 @@ python -m build && pip install dist/manganite-0.0.3-py3-none-any.whl
 
 The above command should also take care of installing and enabling the necessary Jupyter Server extensions: one for Panel, to enable the preview pane, and one for Manganite, to preprocess the magic commands before passing the notebook to Panel preview. To ensure proper functioning, remember to **restart your Jupyter Server** after installing the package.
 
+### Updating
+
+To install a newer version of Manganite, update the repository and run the above command with a `--force-reinstall` flag:
+
+```bash
+python -m build && pip install --force-reinstall dist/manganite-0.0.3-py3-none-any.whl
+```
+
+To save some time, you can also add the `--no-deps` flag to `pip install` if the list of dependencies hasn't changed.
+
+## How it works
+
+Manganite parses your Jupyter notebook and builds a dependency tree between its cells. Scalar variables and Pandas DataFrames are transparently wrapped in [Param](https://param.holoviz.org/) classes, which lets them watch their values for changes and propagate these changes downstream.
+
+Any variable of a [supported type](#widget-types) can be bound to a dashboard widget. The binding is bidirectional, so any change to the variable's value through the user interface will be reflected in the code and vice versa. Every time one of these variables is modified, any other cell that reads its value is re-evaluated and all the related widgets are updated, creating an interactive experience for the end user.
+
+Cells that contain long-running function calls can also be marked as executed on demand, and all their dependent cells will also wait for them to finish, making it possible to control complex optimization processes and plot their results.
+
 ## Usage
 
-To start using Manganite, import the package and load the IPython extension, initializing the dashboard builder and enabling the `%%mnn_...` magic commands.
+To start using Manganite, import the package and load the IPython extension, initializing the dashboard builder and enabling the `%%mnn` magic command. Typically this should be the first cell in the notebook.
 
 ```python
 import manganite
 %load_ext manganite
 ```
 
+For each subsequent cell, you have the option to annotate it with `%%mnn widget` if it should display something, `%%mnn execute` if it should run only after a button is pressed, or skip the annotation altogether for no side effects. See the [reference](#mnn-magic-command) for a detailed description of the magic command.
+
 ### User interface
 
-A typical Manganite dashboard is divided into a header, a main area with three tabs, and a sidebar for optimization logs.
+A typical Manganite dashboard is divided into a header, a main area with tabs, and a sidebar for optimization logs.
 
-The title in the header is taken from the first level-1 header (a line starting with a single `#` sign) in the notebook's Markdown cells and the *Run* button recalculates the cell marked with the [`%%mnn_model`](#mnn_model) command.
+The title in the header is taken from the first level-1 header (a line starting with a single `#` sign) in the notebook's Markdown cells.
 
 The *Description* tab collects all the Markdown cells from the notebook, allowing you to describe the dashboard and introduce the user to the solution you are presenting. You can freely mix Markdown and Python cells in the notebook to make it more readable when opened in Jupyter. If some parts of your Markdown should not be displayed (e.g. when describing an accompanying code cell), you can exclude them by adding an `mnn-ignore` tag to the notebook cell.
 
-The *Inputs* tab contains a 6-column grid on which you can place various widgets, both for collecting user inputs and visualizing them automatically as they change. See [`%%mnn_input`](#mnn_input) for a complete reference of the magic command.
-
-The *Results* tab also displays widgets arranged in a grid, these however only refresh after a run is completed. See [`%%mnn_result`](#mnn_result) for the respective command's syntax.
+The other tabs contain a 6-column grid on which you can place various widgets, both for collecting user inputs and visualizing them automatically as they change.
 
 ### Step 1: Describing inputs
 
-Suppose you're building a model that uses a Pandas DataFrame as one of its inputs. You might write something similar to the following code to load the initial data:
+Suppose you're modeling a supplier sourcing problem, using a Pandas DataFrame as one of its inputs. You might write something similar to the following code to load the initial data:
 
 ```python
 import cvxpy as cp
@@ -51,11 +69,17 @@ supplier_df = pd.read_excel('SupplierSourcing.xlsx', index_col=0)
 If you'd like the dashboard user to be able to modify the input values, you can turn a DataFrame into a widget by adding a magic command at the beginning of the second cell:
 
 ```diff
-+%%mnn_input supplier_df -d 0 0 3 -h "Supplier data"
++%%mnn widget --type table --var supplier_df --tab "Inputs" --header "Supplier data"
  supplier_df = pd.read_excel('SupplierSourcing.xlsx', index_col=0)
 ```
 
-`%%mnn_input supplier_df` tells Manganite that the `supplier_df` DataFrame is an input. The next parameter, `-d`, specifies the location of the widget within the *Inputs* tab: `-d 0 0 3` means "display at row 0, column 0, span 3 columns". Finally, `-h "Supplier data"` provides a widget title.
+Let's break down the magic command above:
+
+- `%%mnn widget` tells Manganite that this cell defines a dashboard widget
+- `--type table` specifies what the widget will be, in this case a table, currently the only available choice for representing a DataFrame
+- `--var supplier_df` points to the variable that will be bound to the widget
+- `--tab "Inputs"` places the widget on a tab called *Inputs* – if it doesn't exist at this point, it will be created
+- `--header "Supplier data"` gives the table a header, so that the user knows what data they are modifying
 
 ### Step 2: Adding reactive visualizations
 
@@ -74,9 +98,9 @@ fig = px.bar(
 fig
 ```
 
-However, since you're building an interactive application, the contents of the DataFrame might change if the user edits some values using the widget. It would make sense to rerun the above code cell so that the plot always reflects the current state of the data. Manganite's `%%mnn_input` magic command does exactly that. With a few small changes you can make your figures respond to data changes.
+However, since you're building an interactive application, the contents of the DataFrame might change if the user edits some values using the widget. It would make sense to rerun the above code cell so that the plot always reflects the current state of the data. Manganite's dependency tree takes care of that. With a few small changes you can display figures that respond to data changes.
 
-First, give the plot variable a unique name:
+First, give the plot variable a unique name – this ensures it won't get overwritten by other plots:
 
 ```diff
 -fig = px.bar(
@@ -93,10 +117,10 @@ First, give the plot variable a unique name:
 +capacity_chart
 ```
 
-Next, you can remove the last line and add the `%%mnn_input` invocation at the beginning, like this:
+Next, you can remove the last line (this is optional, you can leave it if you still want to display the chart in notebook mode) and add the `%%mnn widget` invocation at the beginning, like this:
 
 ```diff
-+%%mnn_input capacity_chart -d 0 3 3 --recalc-on supplier_df -h "Capacity"
++%%mnn widget --type plot --var capacity_chart --tab "Inputs" --header "Capacity"
  capacity_chart = px.bar(
    data_frame = (supplier_df
                  .reset_index()
@@ -109,13 +133,15 @@ Next, you can remove the last line and add the `%%mnn_input` invocation at the b
 -capacity_chart
 ```
 
-Any time `supplier_df` changes, the above notebook cell will be evaluated again, and the `capacity_chart` variable will be wrapped in a Panel widget and placed on the grid, at coordinates [0, 3].
+Since this cell accesses the variable `supplier_df`, Manganite knows that any time `supplier_df` changes, it needs to be evaluated again. The `capacity_chart` variable will be wrapped in a Panel widget and placed on the grid, next to the table we created in the previous step.
 
-You are not limited to updating one variable per cell. If you don't pass the `-d` parameter, the code will be re-executed without creating any widgets. This is useful if you need to compute a number of helper variables for later use:
+Cells without an annotation behave just the same, except they don't display anything on recalculation. This is useful if you need to compute a number of helper variables for later use:
 
 ```python
-%%mnn_input "helper variables" --recalc-on supplier_df
-supplierdata = supplier_df.to_numpy() # dataframe to numpy array
+# this is just a regular notebook cell
+# but Manganite will still rerun it if supplier_df is changed
+
+supplierdata = supplier_df.to_numpy()
 n = len(supplierdata[0]) # number of suppliers
 p = (supplierdata[0,:]) # prices
 u = (supplierdata[1,:]) # whether from union
@@ -128,10 +154,12 @@ x = cp.Variable(n)
 
 ### Step 3: Defining models
 
-To run an optimization model with Manganite, put the calculations in a single cell and add the `%%mnn_model` command as the first line. The code will be transformed into a function that will be called when the user presses the *Run* button in the top right corner. During the execution, all output and errors will be redirected to the *Log* widget in the sidebar.
+To run an optimization model with Manganite, put the calculations in a single cell and add the `%%mnn execute` command as the first line. The code will be transformed into a function that will be called when the user presses a button. If you use the `--tab` argument, you can place the button on a tab like any other widget, otherwise it will show in the header section.
+
+During the execution of a cell annotated with `%%mnn execute`, all standard output and exceptions will be redirected to the *Log* widget in the sidebar.
 
 ```python
-%%mnn_model
+%%mnn execute --on button "Optimize" --returns x
 objective = cp.Minimize(p@x)
 
 constraints = [cp.sum(x) == 1225]
@@ -150,53 +178,68 @@ print('Solved!') # this will be displayed in the log
 
 ### Step 4: Visualizing results
 
-Plotting the results is again possible with the `%%mnn_result` magic command. Unlike `%%mnn_input`, cells annotated with this command don't have dependencies and are recalculated after each successful run of the model.
+Plotting the results is yet another use of the `%%mnn widget` magic command. 
+Since in the `%%mnn execute` cell above the `--returns` argument was set to `x`, all further cells that reference `x` will hold off their first execution until the above cell finishes at least once. This way the entire *Results* tab can be hidden until the optimization succeeds.
 
 ```python
-%%mnn_result solution_chart -d 0 0 6 -h "Solution"
+%%mnn widget --type plot --var solution_chart --tab "Results" --header "Solution"
 solution_chart = px.bar(
   data_frame=pd.DataFrame({
     'Suppliers':supplier_df.columns,
-    'Order volume': x.value}),
+    'Order volume': x.value}), # we access x here
   x='Suppliers',
   y='Order volume',
   template='plotly_white')
 ```
 
-## Magic commands syntax
+You can further explore this example by opening [supplier_sourcing.ipynb](examples/supplier_sourcing.ipynb).
 
-### `%%mnn_input`
+## Reference
 
-```
-%%mnn_input identifier --display Y X W --header HEADER --recalc-on WIDGETS...
-```
+### `%%mnn` magic command
 
-| parameter         | required | value
-| ----------------- | -------: | -----
-| `identifier`      |      yes | variable name if `--display` present or a unique quoted string otherwise
-| `--display`, `-d` |       no | three integers Y X W representing row/column coordinates and width in columns
-| `--header`, `-h`  |       no | any quoted string
-| `--recalc-on`     |       no | space-delimited list of variables previously created with `%%mnn_input`
-
-### `%%mnn_model`
+> :bulb: square brackets indicate optionality
 
 ```
-%%mnn_model
+%%mnn widget --type TYPE [PARAMS] --var VAR_NAME --tab TAB [--position ROW COL SPAN] --header HEADER
 ```
 
-This command does not take parameters and can only be used once per notebook.
-
-### `%%mnn_result`
+| name                 | required | value
+| -------------------- | -------: | -----
+| `TYPE`               |      yes | one of [supported types](#widget-types)
+| `PARAMS`             |       no | context-dependent parameters, see [supported types](#widget-types)
+| `VAR_NAME`           |      yes | name of the variable to be bound to the widget
+| `TAB`                |      yes | any quoted string; if no tab with such label exists, it will be created
+| `ROW`, `COL`, `SPAN` |       no | three integers representing row/column coordinates (0-based) and width in columns on a 6-column grid
 
 ```
-%%mnn_result identifier --display Y X W --header HEADER
+%%mnn execute --on TRIGGER PARAMS [--tab TAB] --returns VAR_NAME
 ```
 
-| parameter         | required | value
-| ----------------- | -------: | -----
-| `identifier`      |      yes | variable name if `--display` present or a unique quoted string otherwise
-| `--display`, `-d` |       no | three integers Y X W representing row/column coordinates and width in columns
-| `--header`, `-h`  |       no | any quoted string
+| name       | required | value
+| ---------- | -------: | -----
+| `TRIGGER`  |      yes | currently always `button`
+| `PARAMS`   |      yes | currently always a quoted string (button label)
+| `TAB`      |       no | any quoted string; if no tab with such label exists, it will be created; if not present, the button will be added to the app header
+| `VAR_NAME` |      yes | name of the variable representing the main result of the process; all further cells referencing it will hold off their first execution until the current cell finishes at least once
+
+### Widget types
+
+Widgets in Manganite are strictly tied to the types of their bound variables. The table below lists all possible configurations.
+
+| variable type       | widget `TYPE` | widget `PARAMS`
+| ------------------- | ------------- | ---------------
+| `bool`              | `checkbox`    | n/a
+| `bool`              | `switch`      | n/a
+| `str`               | `select`      | name of the variable holding the options (a collection of strings, can be any of `list`, `tuple`, `set`)
+| `str`               | `radio`       | same as for `select`
+| `int`               | `slider`      | `MIN:MAX:STEP` where all values are integer literals
+| `int`               | `text`        | n/a
+| `float`             | `slider`      | `MIN:MAX:STEP` where all values are number literals
+| `float`             | `text`        | n/a
+| `datetime.date`     | `date`        | n/a
+| `datetime.datetime` | `datetime`    | n/a
+| `pandas.DataFrame`  | `table`       | n/a
 
 ## Serving the application
 
