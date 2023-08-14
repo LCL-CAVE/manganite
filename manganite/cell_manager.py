@@ -215,10 +215,11 @@ class CellManager():
 
             if first_run:
                 first_run = False
-                for name in loads - stores:
-                    var_state = inspect_var(self.ns, name)
-                    if var_state == 'wrapped':
-                        self.ns[name].param.watch(run_cell, ['value'])
+                if not process_var:
+                    for name in loads - stores:
+                        var_state = inspect_var(self.ns, name)
+                        if var_state == 'wrapped':
+                            self.ns[name].param.watch(run_cell, ['value'])
 
         deferred_deps = undefined & self.deferred.keys()
         process_deps = loads & self.process_callbacks.keys()
