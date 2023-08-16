@@ -4,6 +4,7 @@ from io import BytesIO
 import panel as pn
 import pandas as pd
 
+from .grid import Grid
 
 __version__ = '0.0.3'
 
@@ -42,9 +43,7 @@ class Manganite:
         if description is not None:
             self._layout['Description'].append(pn.pane.Markdown(description))
 
-        self._tabs = pn.Tabs(
-            ('Description', self._layout['Description']),
-            dynamic=True)
+        self._tabs = pn.Tabs(('Description', self._layout['Description']))
         
         self._header = pn.FlexBox(justify_content='end')
         self._sidebar = pn.FlexBox(flex_direction='column', flex_wrap='nowrap', sizing_mode='stretch_both')
@@ -81,8 +80,7 @@ class Manganite:
     
     def get_tab(self, name):
         if name not in self._layout:
-            # self._layout[name] = pn.GridStack(ncols=6)
-            self._layout[name] = pn.GridBox(ncols=2)
+            self._layout[name] = Grid()
             self._tabs.append((name, self._layout[name]))
         
         return self._layout[name]

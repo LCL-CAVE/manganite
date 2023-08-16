@@ -273,6 +273,7 @@ class CellManager():
             stylesheets=[':host { width: fit-content; }'])
         button.on_click(run_process)
         if args.tab is not None:
+            button.styles['grid_column_end'] = 'span 1'
             Manganite.get_instance().get_tab(args.tab).append(button)
         else:
             Manganite.get_instance().get_header().append(button)
@@ -284,10 +285,19 @@ class CellManager():
                 self.panels[args.var].object = widget
             else:
                 self.panels[args.var] = pn.panel(widget)
-                tab = Manganite.get_instance().get_tab(args.tab)
-                tab.append(pn.Column(
+                tab_grid = Manganite.get_instance().get_tab(args.tab)
+                grid_cell = pn.Column(
                     pn.pane.Markdown('### {}'.format(args.header or args.var)),
-                    self.panels[args.var]))
+                    self.panels[args.var])
+
+                y, x, w = args.position
+                if y >= 0:
+                    grid_cell.styles['grid_row_start'] = str(y + 1)
+                if x >= 0 and x < 6:
+                    grid_cell.styles['grid_column_start'] = str(x + 1)
+                grid_cell.styles['grid_column_end'] = 'span {}'.format(w if 0 < w <= 6 else 3)
+
+                tab_grid.append(grid_cell)
 
         widget = {
             'name': args.var,
@@ -312,7 +322,7 @@ class CellManager():
         widget_parser.add_argument('--type', type=str, nargs='+')
         widget_parser.add_argument('--header', type=str)
         widget_parser.add_argument('--position', type=int, nargs=3,
-            required=False, default=(-1, 0, 3))
+            required=False, default=(-1, -1, 3))
 
         argv = split(arg_line)
 
