@@ -243,4 +243,4 @@ Widgets in Manganite are strictly tied to the types of their bound variables. Th
 
 ## Serving the application
 
-To serve the notebook without Jupyter, use the command `mnn serve` in your terminal. For available options, refer to [Panel documentation](https://panel.holoviz.org/user_guide/Server_Configuration.html).
+To serve the notebook without Jupyter, use the command `mnn serve` in your terminal. For available options, refer to [Panel documentation](https://panel.holoviz.org/how_to/server/index.html).
