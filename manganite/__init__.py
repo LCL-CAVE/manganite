@@ -57,7 +57,7 @@ class Manganite:
             sidebar=[self._sidebar],
             main=[self._tabs],
             sidebar_width=400,
-            site='CAVE Lab&nbsp;',
+            # site='CAVE Lab&nbsp;',
             title=title
         ).servable()
 
