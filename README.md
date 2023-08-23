@@ -194,6 +194,22 @@ solution_chart = px.bar(
 
 You can further explore this example by opening [supplier_sourcing.ipynb](examples/supplier_sourcing.ipynb).
 
+### Step 5: Deploy the dashboard as a web application
+
+The final step is to serve the dashboard as a web application so that you can view it with a web browser. Assuming the file name is `supplier_selection.ipynb`, you simply add a cell containing the following line and execute the notebook.
+
+```
+!mnn serve manganite-demo.ipynb
+```
+
+Of course, this will block the notebook from further use. An alternative is to call the following from the terminal
+
+```
+mnn serve manganite-demo.ipynb --autoreload
+```
+
+The resulting dashboard will automatically reload each time you save the notebook, which allows you to make changes and view the results live in the browser.
+
 ## Reference
 
 ### `%%mnn` magic command
@@ -243,4 +259,4 @@ Widgets in Manganite are strictly tied to the types of their bound variables. Th
 
 ## Serving the application
 
-To serve the notebook without Jupyter, use the command `mnn serve` in your terminal. For available options, refer to [Panel documentation](https://panel.holoviz.org/how_to/server/index.html).
+The `mnn serve` command is a simple wrapper for the `panel serve` command. For available options, we refer to the [Panel documentation](https://panel.holoviz.org/how_to/server/index.html).
