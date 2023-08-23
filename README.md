@@ -1,6 +1,6 @@
 # Manganite
 
-Manganite is a dashboarding tool built on the powerful [Panel](https://panel.holoviz.org/) framework. Its primary objective is to allow for an easy transition from a linear Jupyter notebook (load data → build an optimization model → run it → plot results) to an interactive web application, without requiring the user to manually convert most of their existing code to callbacks.
+Manganite is a dashboarding tool built on the powerful [Panel](https://panel.holoviz.org/) framework. Its primary objective is to allow for an easy transition from a linear Jupyter notebook (load data → build a model → run it → plot results) to an interactive web application, without requiring the user to manually convert most of their existing code to callbacks.
 
 ## Installation
 
@@ -18,7 +18,7 @@ The above command should also take care of installing and enabling the necessary
 To install a newer version of Manganite, update the repository and run the above command with a `--force-reinstall` flag:
 
 ```bash
-python -m build && pip install --force-reinstall dist/manganite-0.0.3-py3-none-any.whl
+python -m build && pip install -U dist/manganite-0.0.3-py3-none-any.whl
 ```
 
 To save some time, you can also add the `--no-deps` flag to `pip install` if the list of dependencies hasn't changed.
@@ -103,7 +103,7 @@ However, since you're building an interactive application, the contents of the D
 First, give the plot variable a unique name – this ensures it won't get overwritten by other plots:
 
 ```diff
--fig = px.bar(
+px.bar(
 +capacity_chart = px.bar(
    data_frame = (supplier_df
                  .reset_index()
@@ -113,11 +113,10 @@ First, give the plot variable a unique name – this ensures it won't get overwr
    y='value',
    labels={'variable':'Supplier', 'value':'Capacity'},
    template='plotly_white')
--fig
 +capacity_chart
 ```
 
-Next, you can remove the last line (this is optional, you can leave it if you still want to display the chart in notebook mode) and add the `%%mnn widget` invocation at the beginning, like this:
+Next, you add the `%%mnn widget` invocation at the beginning, like this:
 
 ```diff
 +%%mnn widget --type plot --var capacity_chart --tab "Inputs" --header "Capacity"
@@ -130,7 +129,7 @@ Next, you can remove the last line (this is optional, you can leave it if you st
    y='value',
    labels={'variable':'Supplier', 'value':'Capacity'},
    template='plotly_white')
--capacity_chart
+capacity_chart
 ```
 
 Since this cell accesses the variable `supplier_df`, Manganite knows that any time `supplier_df` changes, it needs to be evaluated again. The `capacity_chart` variable will be wrapped in a Panel widget and placed on the grid, next to the table we created in the previous step.
@@ -140,6 +139,7 @@ Cells without an annotation behave just the same, except they don't display anyt
 ```python
 # this is just a regular notebook cell
 # but Manganite will still rerun it if supplier_df is changed
+# because x depends on n depends on supplierdata depends on supplier_df
 
 supplierdata = supplier_df.to_numpy()
 n = len(supplierdata[0]) # number of suppliers
@@ -154,7 +154,7 @@ x = cp.Variable(n)
 
 ### Step 3: Defining models
 
-To run an optimization model with Manganite, put the calculations in a single cell and add the `%%mnn execute` command as the first line. The code will be transformed into a function that will be called when the user presses a button. If you use the `--tab` argument, you can place the button on a tab like any other widget, otherwise it will show in the header section.
+To run an optimization model with Manganite, put the calculations in a single cell and add the `%%mnn execute` command as the first line. The code will be transformed into a function that will be called when the user presses a button. If you use the `--tab` argument, you can place the button on a tab like any other widget, otherwise it will show in the page header on the right.
 
 During the execution of a cell annotated with `%%mnn execute`, all standard output and exceptions will be redirected to the *Log* widget in the sidebar.
 
