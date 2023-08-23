@@ -103,7 +103,7 @@ However, since you're building an interactive application, the contents of the D
 First, give the plot variable a unique name – this ensures it won't get overwritten by other plots:
 
 ```diff
-px.bar(
+-px.bar(
 +capacity_chart = px.bar(
    data_frame = (supplier_df
                  .reset_index()
