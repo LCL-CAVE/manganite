@@ -249,6 +249,7 @@ Widgets in Manganite are strictly tied to the types of their bound variables. Th
 | `bool`              | `switch`      | n/a
 | `str`               | `select`      | name of the variable holding the options (a collection of strings, can be any of `list`, `tuple`, `set`)
 | `str`               | `radio`       | same as for `select`
+| `str`               | `file`        | optional comma-separated list of [unique file type specifiers](https://developer.mozilla.org/en-US/docs/Web/HTML/Element/input/file#unique_file_type_specifiers) for filtering available files
 | `int`               | `slider`      | `MIN:MAX:STEP` where all values are integer literals
 | `int`               | `text`        | n/a
 | `float`             | `slider`      | `MIN:MAX:STEP` where all values are number literals
