@@ -1,4 +1,7 @@
+import shutil
 import sys
+import tempfile
+import weakref
 from io import BytesIO
 
 import panel as pn
@@ -14,6 +17,10 @@ CSS_FIX = """
 .grid-stack-item-content > * { margin: 0 !important; }
 """
 
+pn.extension(
+    'terminal', 'gridstack', 'tabulator', 'plotly', 'mathjax',
+    raw_css=[CSS_FIX], sizing_mode='stretch_width')
+
 
 class Manganite:
     _nb_instance = None
@@ -24,14 +31,13 @@ class Manganite:
         title = kwargs.pop('title', None) or 'Manganite App'
         description = kwargs.pop('description', None)
 
-        pn.extension(
-            'terminal', 'gridstack', 'tabulator', 'plotly', 'mathjax', *args,
-            raw_css=[CSS_FIX], sizing_mode='stretch_width', **kwargs)
-
         if pn.state.curdoc: # shared environment
             Manganite._server_instances[pn.state.curdoc] = self
         else: # running in JupyterLab
             Manganite._nb_instance = self
+
+        self._upload_dir = tempfile.mkdtemp(prefix='mnn_uploads__')
+        self._finalizer = weakref.finalize(self, shutil.rmtree, self._upload_dir)
 
         self._init_terminal()
         self._optimizer_button = pn.widgets.Button(name='▶ Run', width=80)
@@ -88,6 +94,10 @@ class Manganite:
 
     def get_header(self):
         return self._header
+    
+
+    def get_upload_dir(self):
+        return self._upload_dir
 
 
     @classmethod

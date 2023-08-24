@@ -12,6 +12,7 @@ from pandas import DataFrame
 from IPython.core.magic_arguments import MagicArgumentParser
 
 from manganite import Manganite
+from .file_picker import FilePicker
 
 
 class BoolWrapper(param.Parameterized):
@@ -170,6 +171,9 @@ class CellManager():
                         self.ns[name] = pn.widgets.RadioBoxGroup(name=name, options=options, value=value)
                 elif widget_type == 'text':
                     self.ns[name] = pn.widgets.TextInput(name=name,value=self.ns[name])
+                elif widget_type == 'file':
+                    accept = params if type(params) == str else None
+                    self.ns[name] = FilePicker(name=name, accept=accept)
             elif var_type == bool:
                 label = params if type(params) == str else name
                 if widget_type == 'switch':
@@ -221,7 +225,10 @@ class CellManager():
                     for name in loads - stores:
                         var_state = inspect_var(self.ns, name)
                         if var_state == 'wrapped':
-                            self.ns[name].param.watch(run_cell, ['value'])
+                            # re-evaluate dependent cells only on actual change, except for file pickers,
+                            # where the same name can refer to new file contents
+                            onlychanged = not isinstance(self.ns[name], FilePicker)
+                            self.ns[name].param.watch(run_cell, ['value'], onlychanged=onlychanged)
 
         deferred_deps = undefined & self.deferred.keys()
         process_deps = loads & self.process_callbacks.keys()
