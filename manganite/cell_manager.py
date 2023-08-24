@@ -168,6 +168,8 @@ class CellManager():
                         options = list(self.ns[params])
                         value = self.ns[name] if self.ns[name] in options else options[0]
                         self.ns[name] = pn.widgets.RadioBoxGroup(name=name, options=options, value=value)
+                elif widget_type == 'text':
+                    self.ns[name] = pn.widgets.TextInput(name=name,value=self.ns[name])
             elif var_type == bool:
                 label = params if type(params) == str else name
                 if widget_type == 'switch':
