@@ -263,7 +263,7 @@ class CellManager():
             sys.stdout = mnn._optimizer_terminal
             sys.stderr = mnn._optimizer_terminal
             mnn._optimizer_terminal.write(
-                '\033[32;1m[{}]\nExecuting "{}"...\033[0m\n\n\n'.format(
+                '\033[32;1m[{}]\nExecuting "{}"...\033[0m\n\n'.format(
                     datetime.now().isoformat(sep=' ', timespec='seconds'),
                     label))
             try:

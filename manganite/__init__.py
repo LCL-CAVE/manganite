@@ -52,18 +52,20 @@ class Manganite:
         self._tabs = pn.Tabs(('Description', self._layout['Description']))
         
         self._header = pn.FlexBox(justify_content='end')
-        self._sidebar = pn.FlexBox(flex_direction='column', flex_wrap='nowrap', sizing_mode='stretch_both')
+        self._sidebar = pn.FlexBox(
+            flex_direction='column',
+            flex_wrap='nowrap',
+            width=389) # explicit width for proper initial terminal size
         self._sidebar.append('## Log')
         self._sidebar.append(self._optimizer_terminal)
 
         self._template = pn.template.MaterialTemplate(
-            # collapsed_sidebar=True,
+            collapsed_sidebar=True,
             header=[self._header],
             header_background='#000228',
             sidebar=[self._sidebar],
             main=[self._tabs],
             sidebar_width=400,
-            # site='CAVE Lab&nbsp;',
             title=title
         ).servable()
 
@@ -78,7 +80,6 @@ class Manganite:
             }
 
         self._optimizer_terminal = pn.widgets.Terminal(
-            sizing_mode='stretch_both',
             write_to_console=True,
             options=terminal_options,
             stylesheets=['.terminal-container { width: 100% !important; } .xterm .xterm-viewport { width: auto !important; }'])
