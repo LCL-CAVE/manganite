@@ -17,6 +17,9 @@ CSS_FIX = """
 .grid-stack-item-content > * { margin: 0 !important; }
 """
 
+SIDEBAR_OUTER_WIDTH = 400
+SIDEBAR_INNER_WIDTH = SIDEBAR_OUTER_WIDTH - 10 - 1
+
 pn.extension(
     'terminal', 'gridstack', 'tabulator', 'plotly', 'mathjax',
     raw_css=[CSS_FIX], sizing_mode='stretch_width')
@@ -55,7 +58,7 @@ class Manganite:
         self._sidebar = pn.FlexBox(
             flex_direction='column',
             flex_wrap='nowrap',
-            width=389) # explicit width for proper initial terminal size
+            width=SIDEBAR_INNER_WIDTH) # explicit width for proper initial terminal size
         self._sidebar.append('## Log')
         self._sidebar.append(self._optimizer_terminal)
 
@@ -65,7 +68,7 @@ class Manganite:
             header_background='#000228',
             sidebar=[self._sidebar],
             main=[self._tabs],
-            sidebar_width=400,
+            sidebar_width=SIDEBAR_OUTER_WIDTH,
             title=title
         ).servable()
 
