@@ -5,11 +5,13 @@ from uuid import uuid4
 
 import nbconvert.exporters
 import nbconvert.preprocessors
+from IPython.core.inputtransformer2 import TransformerManager
 
 
 class TransformManganiteMagicsPreprocessor(nbconvert.preprocessors.Preprocessor):
     _magic_pattern = re.compile(r'^\s*%%mnn\s+(.*)')
     _title_pattern = re.compile(r'^#\s*(.+)')
+    _transformer = TransformerManager()
 
 
     def __call__(self, nb, resources):
@@ -71,9 +73,24 @@ class TransformManganiteMagicsPreprocessor(nbconvert.preprocessors.Preprocessor)
         if len(lines):
             match = self._magic_pattern.match(lines[0])
             if match is None:
+                cell = self.strip_system_calls(cell)
                 return '_mnn_cell_mgr.add_cell({0!r})'.format(cell)
             else:
-                return '_mnn_cell_mgr.add_magic_cell({0!r}, {1!r})'.format(match.group(1), '\n'.join(lines[1:]))
+                cell = self.strip_system_calls('\n'.join(lines[1:]))
+                return '_mnn_cell_mgr.add_magic_cell({0!r}, {1!r})'.format(match.group(1), cell)
+
+        return cell
+
+
+    # IPython's `!system` calls need to be stripped explicitly at this step
+    # because this preprocessor converts cells into strings
+    # so any parser later will ignore their contents
+    def strip_system_calls(self, cell):
+        cell = self._transformer.transform_cell(cell)
+        # Bokeh's NotebookHandler follows the same pattern
+        # with `magic` and `run_line_magic`
+        cell = cell.replace('get_ipython().system', '')
+        cell = cell.replace('get_ipython().getoutput', '')
 
         return cell
 
