@@ -1,11 +1,8 @@
 import shutil
-import sys
 import tempfile
 import weakref
-from io import BytesIO
 
 import panel as pn
-import pandas as pd
 
 from .grid import Grid
 
@@ -14,7 +11,6 @@ __version__ = '0.0.3'
 CSS_FIX = """
 #sidebar { background-color: #fafafa; }
 #sidebar > .mdc-drawer__content > .mdc-list { box-sizing: border-box; height: 100%; }
-.grid-stack-item-content > * { margin: 0 !important; }
 """
 
 SIDEBAR_OUTER_WIDTH = 400
@@ -117,51 +113,6 @@ class Manganite:
 def init(*args, **kwargs):
     mnn = Manganite(*args, **kwargs)
     return mnn
-
-
-def get_template():
-    return Manganite.get_instance()._template
-
-
-def get_layout():
-    return Manganite.get_instance()._layout
-
-
-def create_upload_handler(transform=None):
-    def callback(target, event):
-        if event.new is not None:
-            df = pd.read_csv(BytesIO(event.new))
-            if transform is not None:
-                df = transform(df)
-            target.value = df
-    return callback
-
-
-def on_optimize(handler, cb=None):
-    mnn = Manganite.get_instance()
-    def wrapped_handler(*events):
-        sys.stdout = mnn._optimizer_terminal
-        sys.stderr = mnn._optimizer_terminal
-        mnn._optimizer_terminal.clear()
-        mnn.optimizer_done.value = False
-        try:
-            mnn._optimizer_result = handler()
-            mnn.optimizer_done.value = True
-        finally:
-            sys.stdout.flush()
-            sys.stderr.flush()
-            sys.stdout = sys.__stdout__
-            sys.stderr = sys.__stderr__
-
-        if cb is not None:
-            cb()
-
-    mnn._optimizer_button.on_click(wrapped_handler)
-
-
-def get_result():
-    mnn = Manganite.get_instance()
-    return mnn._optimizer_result
 
 
 def load_ipython_extension(ipython):
