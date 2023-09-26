@@ -1,6 +1,7 @@
 import ast
 import re
 import sys
+import traceback
 from collections import namedtuple
 from datetime import date, datetime
 from shlex import split
@@ -10,6 +11,7 @@ import panel as pn
 import param
 from pandas import DataFrame
 from IPython.core.magic_arguments import MagicArgumentParser
+from IPython.core.error import UsageError
 
 from manganite import Manganite
 from .file_picker import FilePicker
@@ -103,6 +105,7 @@ class CellManager():
         self.deferred = {}
         self.panels = {}
         self.process_callbacks = {}
+        self.cell_count = 0
 
 
     def transform(self, source) -> CellTransformInfo:
@@ -190,8 +193,36 @@ class CellManager():
                 self.ns[name] = pn.widgets.Tabulator(self.ns[name])
 
 
-    def add_cell(self, raw_source, process_var=None, widget_attrs=None):
-        _, stores, loads, new, undefined = self.transform(raw_source)
+    def process_exception(self, cell_number, cell_source, err: Exception):
+        mnn = Manganite.get_instance()
+        error_class = err.__class__.__name__
+        error_message = err.args[0]
+
+        if isinstance(err, SyntaxError):
+            line_number = err.lineno
+        elif isinstance(err, UsageError):
+            line_number = None
+        else:
+            line_number = traceback.extract_tb(err.__traceback__)[1].lineno
+        
+        pn.state.log(err, level='error')
+        mnn.add_exception(
+            cell_number=cell_number,
+            line_number=line_number,
+            cell_source=cell_source,
+            error_class=error_class,
+            error_message=error_message)
+
+
+    def add_cell(self, raw_source: str, process_var=None, widget_attrs=None):
+        self.cell_count += 1
+        cell_number = self.cell_count
+
+        try:
+            _, stores, loads, new, undefined = self.transform(raw_source)
+        except Exception as err:
+            self.process_exception(cell_number, raw_source, err)
+            return
 
         defer = process_var is not None
         first_run = True
@@ -199,7 +230,12 @@ class CellManager():
             nonlocal first_run
 
             source = self.transform(raw_source).source
-            exec(source, self.ns, self.ns)
+            try:
+                exec(source, self.ns, self.ns)
+            except Exception as err:
+                self.process_exception(cell_number, source, err)
+                return
+
             for name in stores:
                 var_state = inspect_var(self.ns, name)
 
@@ -321,15 +357,15 @@ class CellManager():
         subparsers = parser.add_subparsers(dest='magic_type')
 
         process_parser = subparsers.add_parser('execute')
-        process_parser.add_argument('--on', type=str, nargs=2)
+        process_parser.add_argument('--on', type=str, nargs=2, required=True)
         process_parser.add_argument('--tab', type=str, required=False)
-        process_parser.add_argument('--returns', type=str)
+        process_parser.add_argument('--returns', type=str, required=True)
 
         widget_parser = subparsers.add_parser('widget')
-        widget_parser.add_argument('--var', type=str)
-        widget_parser.add_argument('--tab', type=str)
-        widget_parser.add_argument('--type', type=str, nargs='+')
-        widget_parser.add_argument('--header', type=str)
+        widget_parser.add_argument('--var', type=str, required=True)
+        widget_parser.add_argument('--tab', type=str, required=True)
+        widget_parser.add_argument('--type', type=str, nargs='+', required=True)
+        widget_parser.add_argument('--header', type=str, required=False)
         widget_parser.add_argument('--position', type=int, nargs=3,
             required=False, default=(-1, -1, 3))
 
@@ -340,9 +376,13 @@ class CellManager():
         range_spec = re.compile(':'.join(3 * [r'[+-]?(\d*\.)?\d+']))
         argv = [' ' + arg if range_spec.match(arg) else arg for arg in argv]
 
-        args = parser.parse_args(argv)
+        try:
+            args = parser.parse_args(argv)
+        except UsageError as err:
+            self.cell_count += 1
+            self.process_exception(self.cell_count, '%%mnn ' + arg_line, err)
+            return
         if args.magic_type == 'execute':
             self.add_process_cell(args, raw_source)
         elif args.magic_type == 'widget':
             self.add_widget_cell(args, raw_source)
-            
