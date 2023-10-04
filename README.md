@@ -267,20 +267,16 @@ The `mnn serve` command is a simple wrapper for the `panel serve` command. For a
 
 GitHub Codespaces provides a seamless environment for running and experimenting with Manganite. To get started, follow these simple steps:
 
-1. **Clone or Open the manganite-codespace Repository:**
-
-https://github.com/daniel-dobos-unilu/codespaces-manganite
-
-2. **Create a GitHub Codespace:**
+1. **Create a GitHub Codespace:**
 
    - Using Codespces requires a github login. Log in to your account or create a new one.
-   - Open the [repository](https://github.com/daniel-dobos-unilu/codespaces-manganite)
+   - Open the [Manganite Codespace repository](https://github.com/daniel-dobos-unilu/codespaces-manganite)
    - Click on the "Code" button and then select "Open with Codespaces."
 
-3. **Access Manganite in Codespaces:**
+2. **Access Manganite in Codespaces:**
 
    GitHub Codespaces will create a development environment for you. Once the environment is ready, you will find Manganite available to use in the Codespaces terminal.
 
-4. **Explore Manganite:**
+3. **Explore Manganite and app Galery:**
 
   You can now start experimenting with Manganite! Check out the app galery with different usecases and explore the widgets, and learn how to create dashboards with ease.
