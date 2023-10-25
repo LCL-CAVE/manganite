@@ -1,3 +1,5 @@
+[![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/LCL-CAVE/codespaces-manganite)
+
 # Manganite
 
 Manganite is a dashboarding tool built on the powerful [Panel](https://panel.holoviz.org/) framework. Its primary objective is to allow for an easy transition from a linear Jupyter notebook (load data → build a model → run it → plot results) to an interactive web application, without requiring the user to manually convert most of their existing code to callbacks.
