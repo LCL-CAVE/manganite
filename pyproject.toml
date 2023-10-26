@@ -12,9 +12,21 @@ dependencies = [
   "param==1.13.0",
   "pathvalidate>=3.1.0"
 ]
+authors = [
+  { name="Daniel Dobos", email="danielandras.dobos@gmail.com" },
+  { name="Hubert Kosiacki", email="hubert@kosiacki.com" },
+  { name="Nils Lohndorf", email="nils@loehndorf.com" },
+]
+description = "Dashboarding tool built on the powerful Panel framework."
+readme = "README.md"
+requires-python = ">=3.8"
 
 [project.scripts]
 mnn = "manganite.command:main"
+
+[project.urls]
+"Homepage" = "https://github.com/LCL-CAVE/manganite"
+"Bug Tracker" = "https://github.com/LCL-CAVE/manganite/issues"
 
 [tool.setuptools.dynamic]
 version = {attr = "manganite.__version__"}
