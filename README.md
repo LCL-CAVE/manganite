@@ -6,24 +6,13 @@ Manganite is a dashboarding tool built on the powerful [Panel](https://panel.hol
 
 ## Installation
 
-Currently Manganite can be built from source and installed using `pip`:
+Mangnite can be installed on Linux, Windows, or Mac with ``pip``:
 
 ```bash
-pip install build
-python -m build && pip install dist/manganite-0.0.3-py3-none-any.whl
+pip install manganite
 ```
 
 The above command should also take care of installing and enabling the necessary Jupyter Server extensions: one for Panel, to enable the preview pane, and one for Manganite, to preprocess the magic commands before passing the notebook to Panel preview. To ensure proper functioning, remember to **restart your Jupyter Server** after installing the package.
-
-### Updating
-
-To install a newer version of Manganite, update the repository and run the above command with a `--force-reinstall` flag:
-
-```bash
-python -m build && pip install -U dist/manganite-0.0.3-py3-none-any.whl
-```
-
-To save some time, you can also add the `--no-deps` flag to `pip install` if the list of dependencies hasn't changed.
 
 ## How it works
 
