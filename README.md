@@ -14,6 +14,15 @@ pip install manganite
 
 The above command should also take care of installing and enabling the necessary Jupyter Server extensions: one for Panel, to enable the preview pane, and one for Manganite, to preprocess the magic commands before passing the notebook to Panel preview. To ensure proper functioning, remember to **restart your Jupyter Server** after installing the package.
 
+## Usage
+
+You can create a servable dashboards in minutes straight from your jupyter notebook
+
+
+https://github.com/LCL-CAVE/manganite/assets/141235286/213fb058-235c-40ce-90a8-067bd3600559
+
+
+
 ## How it works
 
 Manganite parses your Jupyter notebook and builds a dependency tree between its cells. Scalar variables and Pandas DataFrames are transparently wrapped in [Param](https://param.holoviz.org/) classes, which lets them watch their values for changes and propagate these changes downstream.
@@ -22,7 +31,7 @@ Any variable of a [supported type](#widget-types) can be bound to a dashboard wi
 
 Cells that contain long-running function calls can also be marked as executed on demand, and all their dependent cells will also wait for them to finish, making it possible to control complex optimization processes and plot their results.
 
-## Usage
+## Installation
 
 To start using Manganite, import the package and load the IPython extension, initializing the dashboard builder and enabling the `%%mnn` magic command. Typically this should be the first cell in the notebook.
 
