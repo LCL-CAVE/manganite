@@ -16,7 +16,7 @@ The above command should also take care of installing and enabling the necessary
 
 ## Usage
 
-You can create a servable dashboards in minutes straight from your jupyter notebook
+You can create a servable dashboard within minutes straight from inside your Jupyter notebook
 
 
 https://github.com/LCL-CAVE/manganite/assets/141235286/213fb058-235c-40ce-90a8-067bd3600559
