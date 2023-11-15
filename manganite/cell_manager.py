@@ -332,7 +332,7 @@ class CellManager():
                 self.panels[args.var] = pn.panel(widget)
                 tab_grid = Manganite.get_instance().get_tab(args.tab)
                 grid_cell = pn.Column(
-                    pn.pane.Markdown('### {}'.format(args.header or args.var)),
+                    pn.pane.Markdown('## {}'.format(args.header or args.var)),
                     self.panels[args.var])
 
                 y, x, w = args.position
