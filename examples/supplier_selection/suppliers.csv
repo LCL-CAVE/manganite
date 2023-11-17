@@ -1,0 +1,9 @@
+,Price,Union,Rail,Volatility,Capacity
+Ashley,49500.0,True,True,0.15,300
+Bedford,50000.0,True,False,0.16,600
+Consol,61000.0,False,True,0.18,510
+Dunby,63500.0,True,False,0.2,655
+Earlam,66500.0,False,False,0.21,575
+Florence,71000.0,True,False,0.22,680
+Gaston,72500.0,False,True,0.23,450
+Hopt,80000.0,False,True,0.25,490
