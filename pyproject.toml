@@ -10,11 +10,12 @@ dependencies = [
   "nbconvert",
   "panel>=1.2",
   "param==1.13.0",
-  "pathvalidate>=3.1.0"
+  "pathvalidate>=3.1.0",
+  "jupyter-bokeh>=3.0.7"
 ]
 authors = [
-  { name="Daniel Dobos", email="danielandras.dobos@gmail.com" },
   { name="Hubert Kosiacki", email="hubert@kosiacki.com" },
+  { name="Daniel Dobos", email="danielandras.dobos@gmail.com" },
   { name="Nils Lohndorf", email="nils@loehndorf.com" },
 ]
 description = "Dashboarding tool built on the powerful Panel framework."
