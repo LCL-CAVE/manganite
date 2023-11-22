@@ -6,7 +6,7 @@ Manganite is a dashboarding tool built on the powerful [Panel](https://panel.hol
 
 ## Installation
 
-Mangnite can be installed on Linux, Windows, or Mac with ``pip``:
+Manganite can be installed on Linux, Windows, or Mac with ``pip``:
 
 ```bash
 pip install manganite
