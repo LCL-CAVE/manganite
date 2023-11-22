@@ -8,7 +8,7 @@ import panel as pn
 
 from .grid import Grid
 
-__version__ = '0.0.4'
+__version__ = '0.0.5'
 
 CSS_FIX = """
 html { font-family: Roboto, sans-serif; }
