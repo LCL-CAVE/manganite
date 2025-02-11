@@ -281,3 +281,14 @@ GitHub Codespaces provides a seamless environment for running and experimenting 
 3. **Explore Manganite and app Galery:**
 
   You can now start experimenting with Manganite! Check out the app galery with different usecases and explore the widgets, and learn how to create dashboards with ease.
+
+## 🌏  Open Manganite in other Cloud IDEs
+
+Click any of the buttons below to start a new development environment to demo or contribute to the codebase without having to install anything on your machine:
+
+[![Open in Glitch](https://img.shields.io/badge/Open%20in-Glitch-blue?logo=glitch)](https://glitch.com/edit/#!/import/github/LCL-CAVE/manganite)
+[![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/LCL-CAVE/manganite)
+[![Open in CodeSandbox](https://img.shields.io/badge/Open%20in-CodeSandbox-blue?style=flat-square&logo=codesandbox)](https://githubbox.com/LCL-CAVE/manganite)
+[![Open in Repl.it](https://replit.com/badge)](https://replit.com/github/LCL-CAVE/manganite)
+[![Open in Codeanywhere](https://codeanywhere.com/img/open-in-codeanywhere-btn.svg)](https://app.codeanywhere.com/#https://github.com/LCL-CAVE/manganite)
+[![Open in Gitpod](https://gitpod.io/button/open-in-gitpod.svg)](https://gitpod.io/#https://github.com/LCL-CAVE/manganite)
